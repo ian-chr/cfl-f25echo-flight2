@@ -1,0 +1,41 @@
+[Unit]
+Description=Echo FSW Telemetry App
+# Start after network + time are up. No SSH dependency whatsoever.
+After=network-online.target time-sync.target
+Wants=network-online.target
+# Run the boot counter increment first so read_boot_count() sees the right value.
+Requires=echo-incr-boot.service
+After=echo-incr-boot.service
+
+[Service]
+Type=notify
+User=f25-echo2
+Group=f25-echo2
+WorkingDirectory=/home/f25-echo2/echo_fsw
+
+# PYTHONPATH so `from telem_deps import ...` resolves when run from anywhere.
+Environment=PYTHONPATH=/home/f25-echo2/echo_fsw
+Environment=PYTHONUNBUFFERED=1
+
+ExecStart=/usr/bin/python3 /home/f25-echo2/echo_fsw/run_telem.py
+
+# The app calls daemon.notify("WATCHDOG=1") every loop (~5s). If it stops
+# pinging for 30s, systemd will kill it and the Restart= directive will
+# bring it back.
+WatchdogSec=30s
+Restart=on-failure
+RestartSec=5
+
+# SSH-safe I/O. Do NOT attach to any tty, do NOT own a tty.
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TTYReset=no
+
+# Filesystem / resource hygiene
+NoNewPrivileges=yes
+# NOTE: we explicitly do NOT use ProtectSystem/ProtectHome here because the
+# app writes into /home/f25-echo2/echo_fsw/data. Keep it simple.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,37 @@
+[Unit]
+Description=Echo FSW Unified Radio (beacon + CAP/ACK + DAP downlink)
+After=network-online.target echo-telem.service
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=f25-echo2
+Group=f25-echo2
+WorkingDirectory=/home/f25-echo2/echo_fsw
+
+# The radio talks SPI + GPIO via Blinka/adafruit_rfm9x. The f25-echo2 user
+# must be in the 'gpio' and 'spi' groups on the Pi:
+#     sudo usermod -aG gpio,spi,i2c f25-echo2
+# (Required once, on the physical Pi, not baked into this unit.)
+
+Environment=PYTHONPATH=/home/f25-echo2/echo_fsw
+Environment=PYTHONUNBUFFERED=1
+# Blinka/BCM pin map
+Environment=BLINKA_FORCEBOARD=RASPBERRY_PI_4B
+Environment=BLINKA_FORCECHIP=BCM2XXX
+
+ExecStart=/usr/bin/python3 -m radio.unified_radio
+
+WatchdogSec=30s
+Restart=on-failure
+RestartSec=5
+
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+TTYReset=no
+
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

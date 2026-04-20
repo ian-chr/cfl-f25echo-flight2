@@ -1,0 +1,21 @@
+[Unit]
+Description=Increment Echo FSW boot counter
+# Run early, before echo-telem reads the counter.
+DefaultDependencies=yes
+
+[Service]
+Type=oneshot
+User=f25-echo2
+Group=f25-echo2
+ExecStart=/bin/bash /home/f25-echo2/echo_fsw/telem_deps/incr_boot.sh
+
+# A oneshot that silently fails should not block the whole stack; we log
+# to journal and move on. The telem app handles a missing/garbage file
+# gracefully (read_boot_count returns 0 on error).
+RemainAfterExit=yes
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
