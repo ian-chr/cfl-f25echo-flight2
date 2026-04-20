@@ -1,0 +1,20 @@
+SAMPLE_PERIOD_SECONDS = 5.0
+OUTPUT_CSV = "data/telemetry/telemetry.csv"
+MAX_CSV_BYTES = 512 * 1024
+DISK_PATH = "/"
+
+I2C_BUS_NUM = 1
+TMP102_ADDR = 0x4B
+TMP1022_ADDR = 0x4A
+TMP102_TEMP_REG = 0x00
+TMP1022_TEMP_REG = 0x00
+GPS_BUS = 1
+GPS_ADDR = 0x42
+GPS_POLL_HZ = 50
+IMU_ADDR = 0x69
+BARO_ADDR = 0x77
+
+# ---- GPS (optional) ----
+ENABLE_GPS = True
+
+# ---- EDDY (optional) ----
