@@ -4,7 +4,7 @@ import json
 import subprocess
 from datetime import datetime
 from smbus import SMBus
-from systemd import daemon
+from telem_deps.util.sd_notify import notify as sd_notify
 
 from telem_deps.util.eventlog import log_event
 from .sensors.eddy_pdu import read_eddy_pdu
@@ -88,7 +88,7 @@ def read_boot_count():
 
 def main():
     # Tell systemd we started (for WatchdogSec)
-    daemon.notify("READY=1")
+    sd_notify("READY=1")
     log_event("FSW_START", {"msg": "telemetry app starting"})
 
     ensure_parent_folder(OUTPUT_CSV)
@@ -173,7 +173,7 @@ def main():
     try:
         while True:
             # Systemd watchdog heartbeat
-            daemon.notify("WATCHDOG=1")
+            sd_notify("WATCHDOG=1")
             packet_count += 1
 
             # Log a heartbeat event roughly every ~5 minutes

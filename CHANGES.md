@@ -75,7 +75,7 @@ rebuilt them from scratch with SSH-safe defaults.
 | `echo-telem.service` | Main FSW telemetry + camera loop | `f25-echo2` |
 | `echo-radio.service` | Unified radio (beacon + CAP/ACK + DAP) | `f25-echo2` |
 | `echo-watchdog.service` | Supervises the above, restarts/reboots on failure | `root` |
-| `apogee-video.service` | One-shot 60 s video at apogee (triggered on demand) | `f25-echo2` |
+| `apogee-video.service` | One-shot 30 s video at apogee (triggered on demand) | `f25-echo2` |
 
 All services have:
 - `StandardInput=null`, `StandardOutput=journal`, `StandardError=journal`
@@ -96,6 +96,27 @@ git pull
 sudo bash systemd/install.sh
 sudo systemctl start echo-telem.service echo-radio.service echo-watchdog.service
 journalctl -u echo-telem.service -f
+```
+
+### Python venv
+All three long-running services invoke Python from the venv at
+`/home/f25-echo2/echo_fsw/venv/bin/python`. If that path doesn't exist on the
+Pi, the install script will fail fast with instructions. If your venv
+is somewhere else, either:
+
+- create/symlink a venv at `/home/f25-echo2/echo_fsw/venv`, or
+- edit the `ExecStart=` line in each of `echo-telem.service`,
+  `echo-radio.service`, and `echo-watchdog.service` to point at your
+  actual venv's `python` binary.
+
+One subtlety: `echo-watchdog.service` runs as root but uses the
+f25-echo2 venv. That's fine — root can execute any interpreter it
+has +x on, and the venv resolves packages from its own site-packages
+regardless of the calling user. But it does mean `python3-systemd`
+(the `from systemd import daemon` import) needs to be installed **in
+the venv**, not just system-wide:
+```bash
+sudo -u f25-echo2 /home/f25-echo2/echo_fsw/venv/bin/pip install systemd-python
 ```
 
 ### Groups
@@ -176,13 +197,26 @@ Every `/home/f25-echo/echo_fsw/...` path was updated to
    your mission data, consider having `app.py` set a threading event that
    pauses the photo loop for the duration of the apogee video.
 
-2. **`watchdog.py` imports `from systemd import daemon`.** The
-   `systemd-python` package needs to be installed:
+2. **No `systemd-python` dependency.** Earlier versions of this doc said
+   you had to `pip install systemd-python`. That package needs
+   `libsystemd-dev` + a C compiler and has been flaky on Python 3.13 on
+   recent Pi OS images. It's also easy to accidentally install the
+   unrelated `systemd` package instead, which has a completely
+   incompatible API and raises `TypeError: state must be an instance of
+   ...` on the first `daemon.notify("READY=1")` call.
+
+   This repo now includes a ~20-line stdlib-only shim at
+   `telem_deps/util/sd_notify.py` that writes the same notify messages
+   to `$NOTIFY_SOCKET` directly. No pip install required, no native
+   build. If `$NOTIFY_SOCKET` isn't set (e.g. when you run
+   `python run_telem.py` from the shell for debugging), `notify()` is
+   a silent no-op, matching the behavior of the original.
+
+   If you previously installed either package in the venv, it's
+   harmless to leave it there, but you can remove it:
    ```bash
-   sudo apt install python3-systemd
+   ~/echo_fsw/venv/bin/pip uninstall -y systemd systemd-python
    ```
-   If it's missing, the watchdog service will crash on start and
-   `journalctl -u echo-watchdog.service` will show an ImportError.
 
 3. **The RTC sync in `app.py` runs `sudo hwclock ...`** without a password
    prompt. For this to work non-interactively, the sudoers rules from

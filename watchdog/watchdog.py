@@ -16,8 +16,13 @@ This replaces the old design which watched:
 """
 
 import subprocess
+import sys
 import time
-from systemd import daemon
+
+# Make the repo root importable when running from the systemd unit.
+sys.path.insert(0, "/home/f25-echo2/echo_fsw")
+
+from telem_deps.util.sd_notify import notify as sd_notify
 
 # ============================================================
 # CRITICAL SERVICES IN NEW ARCHITECTURE
@@ -80,14 +85,14 @@ def reboot_system():
 # ============================================================
 def main():
     print("[WD] Echo watchdog supervisor starting (Unified-Radio).")
-    daemon.notify("READY=1")
+    sd_notify("READY=1")
 
     restart_history = {u: [] for u in CRITICAL_SERVICES}
 
     last_check = 0.0
 
     while True:
-        daemon.notify("WATCHDOG=1")
+        sd_notify("WATCHDOG=1")
 
         now = time.time()
         if now - last_check >= CHECK_PERIOD:

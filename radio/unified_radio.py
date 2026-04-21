@@ -22,7 +22,7 @@ import busio
 from digitalio import DigitalInOut
 import adafruit_rfm9x
 
-from systemd import daemon
+from telem_deps.util.sd_notify import notify as sd_notify
 
 from lora_gnu_radio.CFLTXRX.encode import encode_rap
 from lora_gnu_radio.CFLTXRX.decode import decode_rap
@@ -309,7 +309,7 @@ def handle_cap_and_downlink(rfm9x, rap_data, pid, sid, flag):
     sent_count = 0
     for part in request_parts:
         # Keep watchdog happy during long downlink
-        daemon.notify("WATCHDOG=1")
+        sd_notify("WATCHDOG=1")
 
         if part >= total_parts:
             print(f"[RADIO] Skipping invalid part {part} (max: {total_parts - 1})")
@@ -352,12 +352,12 @@ def main():
     last_beacon_time = time.time()
 
     # Tell systemd we're ready
-    daemon.notify("READY=1")
+    sd_notify("READY=1")
 
     while True:
         try:
             # Pet the watchdog each loop
-            daemon.notify("WATCHDOG=1")
+            sd_notify("WATCHDOG=1")
 
             # -------------------------------------------------
             # 1) Maybe send a beacon (if not in the middle of
