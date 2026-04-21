@@ -17,7 +17,7 @@ WorkingDirectory=/home/f25-echo2/echo_fsw
 Environment=PYTHONPATH=/home/f25-echo2/echo_fsw
 Environment=PYTHONUNBUFFERED=1
 
-ExecStart=/usr/bin/python3 /home/f25-echo2/echo_fsw/run_telem.py
+ExecStart=/home/f25-echo2/.venv/bin/python /home/f25-echo2/echo_fsw/run_telem.py
 
 # The app calls daemon.notify("WATCHDOG=1") every loop (~5s). If it stops
 # pinging for 30s, systemd will kill it and the Restart= directive will

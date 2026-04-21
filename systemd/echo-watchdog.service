@@ -17,7 +17,7 @@ WorkingDirectory=/home/f25-echo2/echo_fsw
 Environment=PYTHONPATH=/home/f25-echo2/echo_fsw
 Environment=PYTHONUNBUFFERED=1
 
-ExecStart=/usr/bin/python3 /home/f25-echo2/echo_fsw/watchdog/watchdog.py
+ExecStart=/home/f25-echo2/.venv/bin/python /home/f25-echo2/echo_fsw/watchdog/watchdog.py
 
 # The watchdog pings itself every ~1s.
 WatchdogSec=10s

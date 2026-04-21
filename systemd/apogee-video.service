@@ -19,7 +19,7 @@ WorkingDirectory=/home/f25-echo2/echo_fsw
 # a file-based flag around the apogee window.
 
 ExecStart=/usr/bin/rpicam-vid \
-    -t 60000 \
+    -t 30000 \
     -o /home/f25-echo2/echo_fsw/data/camera/videos/apogee_%Y%m%d_%H%M%S.h264 \
     --width 1920 --height 1080 --framerate 30 --nopreview
 

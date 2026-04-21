@@ -20,7 +20,7 @@ Environment=PYTHONUNBUFFERED=1
 Environment=BLINKA_FORCEBOARD=RASPBERRY_PI_4B
 Environment=BLINKA_FORCECHIP=BCM2XXX
 
-ExecStart=/usr/bin/python3 -m radio.unified_radio
+ExecStart=/home/f25-echo2/.venv/bin/python -m radio.unified_radio
 
 WatchdogSec=30s
 Restart=on-failure
