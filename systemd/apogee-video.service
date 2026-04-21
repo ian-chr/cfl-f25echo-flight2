@@ -1,0 +1,28 @@
+[Unit]
+Description=Echo FSW Apogee Video Capture (one-shot)
+# Triggered on demand by telem_deps.app when apogee is detected via GPS/baro/
+# time fallback. Not enabled at boot.
+
+[Service]
+Type=oneshot
+User=f25-echo2
+Group=f25-echo2
+WorkingDirectory=/home/f25-echo2/echo_fsw
+
+# NOTE on camera contention: telem_deps.sensors.camera_worker uses a
+# threading.Lock() to serialize rpicam-still vs rpicam-vid inside the FSW
+# process. This service runs in a SEPARATE process, so that lock cannot
+# protect it. The apogee video will race with the 10-second photo cycle.
+# The rpicam stack handles this as best it can (the second opener gets
+# EBUSY), so one frame may be lost; the 60s video still records.
+# If you want hard exclusion, have echo-telem.service stop the cycle via
+# a file-based flag around the apogee window.
+
+ExecStart=/usr/bin/rpicam-vid \
+    -t 30000 \
+    -o /home/f25-echo2/echo_fsw/data/camera/videos/apogee_%Y%m%d_%H%M%S.h264 \
+    --width 1920 --height 1080 --framerate 30 --nopreview
+
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
