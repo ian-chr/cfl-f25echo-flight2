@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv-sim/
+
+# Simulator runtime state (regenerated per run; not part of the FSW itself)
+sim/state/fsw_home/
+sim/state/radio_nodes/
+sim/state/gs_downloads/
+sim/state/control.sock
+sim/state/notify_sockets/
+sim/state/rtc_offset.json
+sim/state/active_config.json

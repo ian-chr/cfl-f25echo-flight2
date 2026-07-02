@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""Fake `rpicam-still`. Backs telem_deps/sensors/camera_worker.py's photo
+capture -- writes a real, valid JPEG of the requested size to the
+requested path (so the downstream PIL-thumbnail step and the radio
+DAP downlink both have real bytes to work with), with the current
+mission time/altitude/phase burned into the image so a downlinked
+photo is visibly tied to a moment in the simulated flight.
+"""
+import os
+import sys
+import time
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, REPO_ROOT)
+sys.path.insert(0, os.path.join(REPO_ROOT, "sim", "fake_modules"))
+
+from PIL import Image, ImageDraw  # noqa: E402
+
+from sim.config import get_config  # noqa: E402
+from sim.world import get_world  # noqa: E402
+
+
+def _parse_args(argv):
+    opts = {"width": 4656, "height": 3496, "timeout_ms": 1000, "out": None}
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == "-o" and i + 1 < len(argv):
+            opts["out"] = argv[i + 1]; i += 2
+        elif a == "--width" and i + 1 < len(argv):
+            opts["width"] = int(argv[i + 1]); i += 2
+        elif a == "--height" and i + 1 < len(argv):
+            opts["height"] = int(argv[i + 1]); i += 2
+        elif a == "--timeout" and i + 1 < len(argv):
+            opts["timeout_ms"] = int(argv[i + 1]); i += 2
+        else:
+            i += 1
+    return opts
+
+
+def main(argv):
+    opts = _parse_args(argv)
+    if not opts["out"]:
+        print("rpicam-still: no -o output path given", file=sys.stderr)
+        return 1
+
+    cfg = get_config()
+    scale = max(1.0, cfg.time_scale)
+    time.sleep(min(1.0, (opts["timeout_ms"] / 1000.0) / scale))
+
+    s = get_world().now()
+    w, h = opts["width"], opts["height"]
+
+    # Sky-toned background that darkens with altitude, vaguely evocative
+    # of a real ascent photo without needing real camera hardware.
+    dark = max(0.0, min(1.0, s.alt_m / 30000.0))
+    sky = (int(135 * (1 - dark) + 5 * dark), int(206 * (1 - dark) + 5 * dark), int(235 * (1 - dark) + 20 * dark))
+    img = Image.new("RGB", (w, h), color=sky)
+    draw = ImageDraw.Draw(img)
+    label = (
+        f"ECHO FSW SIM  t={s.mission_t:8.1f}s  phase={s.phase}\n"
+        f"alt={s.alt_m:8.1f}m  vspeed={s.vspeed_mps:+6.2f}m/s\n"
+        f"lat={s.lat_deg:.5f} lon={s.lon_deg:.5f}"
+    )
+    draw.multiline_text((max(10, w // 40), max(10, h // 40)), label, fill=(255, 255, 255))
+
+    os.makedirs(os.path.dirname(opts["out"]), exist_ok=True)
+    img.save(opts["out"], "JPEG", quality=90)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

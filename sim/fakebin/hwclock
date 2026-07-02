@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""Fake `hwclock`. Backs telem_deps/app.py's GPS-to-RTC drift-sync path
+(`sudo hwclock --set --date ...`, `-w`, `-s`) without ever touching the
+real host's clock -- `--set --date` just updates the virtual RV-8803's
+stored offset (sim/devices/rtc_device.py), and `-w`/`-s` are no-ops
+since there's no separate hardware RTC or system clock to push to/from
+in sim.
+"""
+import datetime
+import os
+import sys
+import time
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, REPO_ROOT)
+
+from sim.devices.rtc_device import write_offset_sec  # noqa: E402
+
+
+def main(argv):
+    if "--set" in argv and "--date" in argv:
+        date_str = argv[argv.index("--date") + 1]
+        try:
+            target = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            print(f"hwclock: bad --date {date_str!r}", file=sys.stderr)
+            return 1
+        target_epoch = target.replace(tzinfo=datetime.timezone.utc).timestamp()
+        write_offset_sec(target_epoch - time.time())
+        return 0
+
+    # "-w" (write system time to hw RTC) and "-s" (set system time from hw
+    # RTC) are both no-ops: sim has no separate hardware clock to write to,
+    # and we must never actually change the dev machine's system clock.
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

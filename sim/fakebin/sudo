@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""Fake `sudo`. app.py's RTC-sync path shells out to `sudo hwclock ...`
+non-interactively; a real `sudo` on the dev machine would either prompt
+for a password or fail outright. This just execs the wrapped command
+directly (after our fakebin dir wins the PATH lookup for it), so
+`sudo hwclock --set ...` becomes our fake `hwclock` with no privilege
+escalation or password prompt involved.
+"""
+import os
+import sys
+
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    while args and args[0].startswith("-"):
+        args = args[1:]
+    if not args:
+        sys.exit(0)
+    os.execvp(args[0], args)

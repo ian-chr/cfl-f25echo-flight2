@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Echo FSW &mdash; Live Mission Dashboard</title>
+<link rel="stylesheet" href="/static/dashboard.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+  <header>
+    <h1>ECHO FSW &mdash; Live Mission Dashboard</h1>
+    <div id="conn-status" class="pill disconnected">connecting&hellip;</div>
+  </header>
+
+  <main>
+    <section id="panel-map" class="card">
+      <div class="card-header">
+        <h2>Ground Track</h2>
+        <div class="map-controls">
+          <label><input type="checkbox" id="follow-toggle" checked /> follow</label>
+          <button id="btn-fit">fit track</button>
+        </div>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <section id="panel-cube" class="card">
+      <h2>Attitude (live IMU probe, estimated)</h2>
+      <div id="cube"></div>
+      <div class="attitude-readout">
+        <span>Roll <b id="v-roll">--</b>&deg;</span>
+        <span>Pitch <b id="v-pitch">--</b>&deg;</span>
+        <span>Yaw <b id="v-yaw">--</b>&deg;</span>
+      </div>
+      <p class="note">Roll/pitch from accelerometer, yaw from tilt-compensated magnetometer,
+        sampled at 20 Hz straight from the simulated IMU &mdash; like a bench-test scope probe,
+        decoupled from the FSW's ~5s downlink cadence below. Attitude is a dashboard-side
+        estimate; the flight computer itself only logs raw accel/gyro/mag.</p>
+    </section>
+
+    <section id="panel-chart" class="card">
+      <h2>Altitude &amp; Vertical Speed</h2>
+      <canvas id="altChart"></canvas>
+    </section>
+
+    <section id="panel-gauges" class="card">
+      <h2>Telemetry</h2>
+      <div class="gauge-grid">
+        <div class="gauge"><span class="label">Mission Time</span><span class="value" id="g-time">--</span></div>
+        <div class="gauge"><span class="label">Packet #</span><span class="value" id="g-pkt">--</span></div>
+        <div class="gauge"><span class="label">Boot Count</span><span class="value" id="g-boot">--</span></div>
+        <div class="gauge"><span class="label">Altitude</span><span class="value" id="g-alt">--</span></div>
+        <div class="gauge"><span class="label">Ground Speed</span><span class="value" id="g-speed">--</span></div>
+        <div class="gauge"><span class="label">GPS Sats</span><span class="value" id="g-sats">--</span></div>
+        <div class="gauge"><span class="label">Battery</span><span class="value" id="g-batt">--</span></div>
+        <div class="gauge"><span class="label">Batt Current</span><span class="value" id="g-ibatt">--</span></div>
+        <div class="gauge"><span class="label">BME Temp</span><span class="value" id="g-bmetemp">--</span></div>
+        <div class="gauge"><span class="label">BME Pressure</span><span class="value" id="g-bmepress">--</span></div>
+        <div class="gauge"><span class="label">Humidity</span><span class="value" id="g-hum">--</span></div>
+        <div class="gauge"><span class="label">CPU Temp / Load</span><span class="value" id="g-cpu">--</span></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

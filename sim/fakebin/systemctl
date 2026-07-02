@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Fake `systemctl`. Placed early on PATH during a sim run so every real
+`subprocess.run(["systemctl", ...])` call in watchdog.py, app.py, and
+telem_deps/util/eventlog.py transparently talks to sim/supervisor.py's
+FakeSystemd instead of the real systemd -- and can never reboot, restart,
+or otherwise touch the actual host machine.
+"""
+import os
+import sys
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, REPO_ROOT)
+
+from sim.fakebin_client import send_control  # noqa: E402
+
+
+def main(argv):
+    if not argv:
+        print("usage: systemctl <command> [unit...]", file=sys.stderr)
+        return 1
+
+    sub = argv[0]
+
+    if sub in ("is-active", "is-failed", "restart", "start", "stop"):
+        units = [a for a in argv[1:] if not a.startswith("-")]
+        if not units:
+            print(f"systemctl {sub}: no unit given", file=sys.stderr)
+            return 1
+        exit_code = 0
+        for unit in units:
+            resp = send_control(sub, unit)
+            if resp.get("stdout"):
+                print(resp["stdout"])
+            exit_code = max(exit_code, resp.get("exit", 1))
+        return exit_code
+
+    if sub == "reboot":
+        resp = send_control("reboot")
+        return resp.get("exit", 0)
+
+    if sub == "get-default":
+        resp = send_control("get-default")
+        print(resp.get("stdout", "multi-user.target"))
+        return resp.get("exit", 0)
+
+    if sub == "list-units":
+        resp = send_control("list-units-targets")
+        print(resp.get("stdout", ""))
+        return resp.get("exit", 0)
+
+    if sub in ("daemon-reload", "daemon-reexec", "reset-failed"):
+        return 0
+
+    if sub in ("enable", "disable"):
+        return 0
+
+    # Unrecognized subcommand: don't hard-fail the FSW over something we
+    # don't model, just report success quietly.
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
